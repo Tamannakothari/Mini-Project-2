@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Country Guess Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🌍 Guess All 197 Countries</h1>
+
+<div id="top">
+  <div id="timer">15:00</div>
+  <div id="progress">0 / 197</div>
+</div>
+
+<input id="guessInput" placeholder="Enter country">
+<button onclick="handleGuess()">Submit</button>
+<button onclick="resetGame()">Reset</button>
+
+<p id="message"></p>
+
+<div id="map-container">
+  <object id="worldMap" type="image/svg+xml" data="world.svg"></object>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
