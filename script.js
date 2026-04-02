@@ -1,3 +1,4 @@
+// FULL COUNTRY LIST
 const countries = [
 "afghanistan","albania","algeria","andorra","angola","argentina","armenia","australia","austria","azerbaijan",
 "bahamas","bahrain","bangladesh","barbados","belarus","belgium","belize","benin","bhutan","bolivia",
@@ -23,7 +24,8 @@ const countries = [
 
 let guessed = [];
 let time = 15 * 60;
-let timerInterval;
+let timerInterval = null;
+let isRunning = false;
 
 // NORMALIZE INPUT
 function normalize(str) {
@@ -37,16 +39,20 @@ function initializeMap() {
 
   countries.forEach(country => {
     let id = country.replace(/ /g, "-");
+
     const shape = svgDoc.getElementById(id);
     if (!shape) return;
 
     const bbox = shape.getBBox();
 
     const text = svgDoc.createElementNS("http://www.w3.org/2000/svg", "text");
+
     text.setAttribute("x", bbox.x + bbox.width / 2);
     text.setAttribute("y", bbox.y + bbox.height / 2);
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("class", "label");
+    text.setAttribute("data-country", id);
+
     text.textContent = "?";
 
     svg.appendChild(text);
@@ -55,6 +61,8 @@ function initializeMap() {
 
 // HANDLE GUESS
 function handleGuess() {
+  if (!isRunning) return;
+
   const input = document.getElementById("guessInput");
   const guess = normalize(input.value);
 
@@ -91,22 +99,11 @@ function fillCountry(countryName) {
 
   shape.style.fill = "#4CAF50";
 
+  const label = svg.querySelector(`text[data-country="${id}"]`);
+  if (label) label.remove();
+
   const bbox = shape.getBBox();
 
-  // remove old ?
-  svg.querySelectorAll("text").forEach(t => {
-    const x = parseFloat(t.getAttribute("x"));
-    const y = parseFloat(t.getAttribute("y"));
-
-    if (
-      Math.abs(x - (bbox.x + bbox.width / 2)) < 2 &&
-      Math.abs(y - (bbox.y + bbox.height / 2)) < 2
-    ) {
-      t.remove();
-    }
-  });
-
-  // add country name
   const text = svgDoc.createElementNS("http://www.w3.org/2000/svg", "text");
 
   text.setAttribute("x", bbox.x + bbox.width / 2);
@@ -127,34 +124,39 @@ function updateProgress() {
 
 // TIMER
 function startTimer() {
-  clearInterval(timerInterval);
+  if (isRunning) return;
+
+  isRunning = true;
+  document.getElementById("guessInput").disabled = false;
 
   timerInterval = setInterval(() => {
     let min = Math.floor(time / 60);
     let sec = time % 60;
     sec = sec < 10 ? "0" + sec : sec;
 
-    document.getElementById("timer").textContent =
-      `${min}:${sec}`;
+    document.getElementById("timer").textContent = `${min}:${sec}`;
 
     time--;
 
     if (time < 0) {
       clearInterval(timerInterval);
+      isRunning = false;
       setMessage("⏰ Time's up!");
     }
   }, 1000);
 }
 
-// MESSAGE
-function setMessage(msg) {
-  document.getElementById("message").textContent = msg;
+// PAUSE
+function pauseTimer() {
+  clearInterval(timerInterval);
+  isRunning = false;
 }
 
 // RESET
 function resetGame() {
   guessed = [];
   time = 15 * 60;
+  isRunning = false;
 
   const svgDoc = document.getElementById("worldMap").contentDocument;
 
@@ -166,12 +168,22 @@ function resetGame() {
     svgDoc.querySelectorAll("text").forEach(t => t.remove());
   }
 
+  document.getElementById("guessInput").disabled = true;
+
   updateProgress();
   initializeMap();
-  startTimer();
 }
 
-// ENTER KEY
+// MESSAGE
+function setMessage(msg) {
+  document.getElementById("message").textContent = msg;
+}
+
+// EVENTS
+document.getElementById("startBtn").addEventListener("click", startTimer);
+document.getElementById("pauseBtn").addEventListener("click", pauseTimer);
+document.getElementById("resetBtn").addEventListener("click", resetGame);
+
 document.getElementById("guessInput").addEventListener("keypress", (e) => {
   if (e.key === "Enter") handleGuess();
 });
@@ -179,5 +191,5 @@ document.getElementById("guessInput").addEventListener("keypress", (e) => {
 // LOAD SVG
 document.getElementById("worldMap").addEventListener("load", () => {
   initializeMap();
-  startTimer();
+  updateProgress();
 });
